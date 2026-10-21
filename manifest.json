@@ -11,7 +11,7 @@
   "license": "MIT",
   "keywords": ["bank statement", "mt940", "camt", "sepa", "nacha", "ach", "dxf", "laser cutting", "reconciliation"],
   "server": {
-    "type": "uv",
+    "type": "python",
     "entry_point": "src/deterministic_finance_cad_mcp/server.py",
     "mcp_config": {
       "command": "uv",
