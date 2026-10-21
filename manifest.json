@@ -1,0 +1,43 @@
+{
+  "manifest_version": "0.4",
+  "name": "deterministic-finance-cad-mcp",
+  "display_name": "Deterministic Finance & CAD",
+  "version": "0.1.0",
+  "description": "Exact tools for bank statements (MT940, camt, BAI2, CODA), SEPA and NACHA ACH payment files, and DXF laser-cut quotes.",
+  "long_description": "Rule-based APIs instead of LLM guesswork: reconcile bank statements and convert them to CSV, hledger, beancount, camt.053 or DATEV; generate and validate SEPA pain.001/pain.008 and NACHA ACH files; measure and price DXF parts for laser cutting. Needs a free RapidAPI key.",
+  "author": { "name": "SSYkolos", "url": "https://ssykolos.github.io" },
+  "homepage": "https://ssykolos.github.io",
+  "repository": { "type": "git", "url": "https://github.com/SSYkolos/deterministic-finance-cad-mcp" },
+  "license": "MIT",
+  "keywords": ["bank statement", "mt940", "camt", "sepa", "nacha", "ach", "dxf", "laser cutting", "reconciliation"],
+  "server": {
+    "type": "uv",
+    "entry_point": "src/deterministic_finance_cad_mcp/server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": ["run", "--directory", "${__dirname}", "deterministic-finance-cad-mcp"],
+      "env": { "RAPIDAPI_KEY": "${user_config.rapidapi_key}" }
+    }
+  },
+  "user_config": {
+    "rapidapi_key": {
+      "type": "string",
+      "title": "RapidAPI key",
+      "description": "Free key from rapidapi.com; subscribe to the free plans of the SSYkolos APIs.",
+      "required": true,
+      "sensitive": true
+    }
+  },
+  "tools": [
+    { "name": "reconcile_statement", "description": "Parse and reconcile a bank statement" },
+    { "name": "analyze_dxf", "description": "Measure a DXF drawing for cutting" },
+    { "name": "quote_dxf", "description": "Price a DXF part from your rates" },
+    { "name": "generate_sepa", "description": "Build a SEPA pain.001/pain.008 file" },
+    { "name": "validate_sepa", "description": "Validate a SEPA pain.001/pain.008 file" },
+    { "name": "read_sepa_status", "description": "Explain a pain.002 status report" },
+    { "name": "generate_ach", "description": "Build a NACHA ACH file" },
+    { "name": "validate_ach", "description": "Validate a NACHA ACH file" },
+    { "name": "parse_ach", "description": "ACH file to JSON or CSV rows" },
+    { "name": "explain_ach_returns", "description": "Explain ACH return and change codes" }
+  ]
+}

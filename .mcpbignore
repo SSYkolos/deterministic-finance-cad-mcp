@@ -1,0 +1,8 @@
+tests/
+.git/
+*.mcpb
+__pycache__/
+*.egg-info/
+SUBMISSIONS.md
+.pytest_cache/
+dist/

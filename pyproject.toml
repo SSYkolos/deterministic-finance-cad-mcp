@@ -1,0 +1,25 @@
+[project]
+name = "deterministic-finance-cad-mcp"
+version = "0.1.0"
+description = "MCP server for deterministic bank-statement reconciliation, SEPA/NACHA payment files and DXF laser-cut quotes (via RapidAPI)"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = ["mcp>=2,<3", "httpx>=0.27"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+deterministic-finance-cad-mcp = "deterministic_finance_cad_mcp.server:main"
+
+[project.urls]
+Homepage = "https://ssykolos.github.io"
+Repository = "https://github.com/SSYkolos/deterministic-finance-cad-mcp"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
