@@ -119,6 +119,11 @@ pytest
 Tests mock the HTTP layer. `test_smoke_real_api` calls the live reconciler and runs only
 when `RAPIDAPI_KEY` is set.
 
+## n8n workflow
+
+No MCP client? [`examples/n8n`](examples/n8n) has an importable n8n workflow: bank statement email →
+balance check → Google Sheets, with an alert when a statement does not add up.
+
 ## More
 
 Docs, demos and direct (non-RapidAPI) plans: **[ssykolos.github.io](https://ssykolos.github.io)**
