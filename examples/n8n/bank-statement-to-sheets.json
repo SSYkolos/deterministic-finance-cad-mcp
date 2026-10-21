@@ -1,0 +1,276 @@
+{
+  "name": "Bank statement email → Reconciler → Google Sheets (+ alert if not VERIFIED)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Bank statement check\nMT940 / camt.053 / BAI2 / CODA attachment arrives by email → Bank Statement Reconciler (RapidAPI) checks opening + transactions = closing → one row per statement in Google Sheets → email alert when a statement is not VERIFIED.\n\n**Set up**\n1. IMAP credential for the mailbox the bank sends to.\n2. Header Auth credential: name `X-RapidAPI-Key`, value = your key from rapidapi.com/SSYkolos/api/bank-statement-reconciler1 (free plan works).\n3. Google Sheets: paste your sheet URL; first row = column names (the node can create them).\n4. SMTP credential + your address in the alert node.\n\nNothing is stored by the API; the file is processed in memory.",
+        "height": 380,
+        "width": 420
+      },
+      "id": "8f0d2c1e-0001-4c3a-9e0a-5b1f6a7c0001",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -440
+      ]
+    },
+    {
+      "parameters": {
+        "mailbox": "INBOX",
+        "postProcessAction": "read",
+        "downloadAttachments": true,
+        "options": {}
+      },
+      "id": "8f0d2c1e-0002-4c3a-9e0a-5b1f6a7c0002",
+      "name": "Statement email (IMAP)",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "imap": {
+          "id": "REPLACE_IMAP",
+          "name": "IMAP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// One item per attachment that looks like a bank statement.\nconst STATEMENT = /\\.(sta|mt940|940|txt|xml|053|camt|bai|bai2|cod|coda|zip)$/i;\nconst out = [];\nfor (const item of $input.all()) {\n  for (const [key, bin] of Object.entries(item.binary || {})) {\n    if (!STATEMENT.test(bin.fileName || '')) continue;\n    out.push({\n      json: {\n        email_subject: item.json.subject || '',\n        email_date: item.json.date || '',\n        file_name: bin.fileName,\n      },\n      binary: { data: bin },\n    });\n  }\n}\nreturn out;"
+      },
+      "id": "8f0d2c1e-0003-4c3a-9e0a-5b1f6a7c0003",
+      "name": "Statement attachments",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://bank-statement-reconciler1.p.rapidapi.com/v1/reconcile",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-RapidAPI-Host",
+              "value": "bank-statement-reconciler1.p.rapidapi.com"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8f0d2c1e-0004-4c3a-9e0a-5b1f6a7c0004",
+      "name": "Reconcile (RapidAPI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_RAPIDAPI",
+          "name": "RapidAPI key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// One row per statement; a file the API rejected becomes one ERROR row.\nconst rows = [];\n$input.all().forEach((item, i) => {\n  const src = $('Statement attachments').itemMatching(i).json;\n  const r = item.json;\n  const base = { checked_at: new Date().toISOString(), email_subject: src.email_subject, file_name: src.file_name };\n  if (!r.statements) {\n    const err = r.error ?? r;\n    rows.push({ json: { ...base, verdict: 'ERROR', note: (typeof err === 'string' ? err : JSON.stringify(err)).slice(0, 300) } });\n    return;\n  }\n  for (const s of r.statements) {\n    rows.push({ json: {\n      ...base,\n      verdict: s.audit_verdict,\n      format: s.format,\n      account: s.account_id,\n      currency: s.currency,\n      statement_ref: s.statement_reference,\n      opening_balance: s.opening_balance,\n      total_credits: s.total_credits,\n      total_debits: s.total_debits,\n      calculated_closing: s.calculated_closing_balance,\n      bank_closing: s.closing_balance,\n      discrepancy: s.discrepancy_amount,\n      transactions: s.transaction_count,\n      note: (s.audit_notes || []).join(' | ').slice(0, 300),\n    } });\n  }\n});\nreturn rows;"
+      },
+      "id": "8f0d2c1e-0005-4c3a-9e0a-5b1f6a7c0005",
+      "name": "One row per statement",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "8f0d2c1e-0006-4c3a-9e0a-5b1f6a7c0006",
+      "name": "Append to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        900,
+        -100
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_GSHEETS",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8f0d2c1e-0101-4c3a-9e0a-5b1f6a7c0101",
+              "leftValue": "={{ $json.verdict }}",
+              "rightValue": "VERIFIED",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "8f0d2c1e-0007-4c3a-9e0a-5b1f6a7c0007",
+      "name": "Not VERIFIED?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        900,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "n8n@example.com",
+        "toEmail": "you@example.com",
+        "subject": "={{ $json.verdict }}: bank statement {{ $json.file_name }}",
+        "emailFormat": "text",
+        "text": "=Statement check result: {{ $json.verdict }}\n\nFile: {{ $json.file_name }} (email: {{ $json.email_subject }})\nAccount: {{ $json.account }} {{ $json.currency }}\nOpening {{ $json.opening_balance }} + credits {{ $json.total_credits }} - debits {{ $json.total_debits }} = {{ $json.calculated_closing }}\nBank's closing balance: {{ $json.bank_closing }}\nDiscrepancy: {{ $json.discrepancy }}\nNote: {{ $json.note }}\n\nDISCREPANCY = the numbers do not add up. UNVERIFIABLE = the file has no closing balance to check against. ERROR = the file could not be read.",
+        "options": {}
+      },
+      "id": "8f0d2c1e-0008-4c3a-9e0a-5b1f6a7c0008",
+      "name": "Alert email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1120,
+        100
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "REPLACE_SMTP",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Statement email (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Statement attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Statement attachments": {
+      "main": [
+        [
+          {
+            "node": "Reconcile (RapidAPI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reconcile (RapidAPI)": {
+      "main": [
+        [
+          {
+            "node": "One row per statement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One row per statement": {
+      "main": [
+        [
+          {
+            "node": "Append to Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Not VERIFIED?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Not VERIFIED?": {
+      "main": [
+        [
+          {
+            "node": "Alert email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
