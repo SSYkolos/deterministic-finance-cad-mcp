@@ -1,5 +1,8 @@
 # Directory submissions
 
+Status (2026-10-21): glama.ai submitted; mcpservers.org submitted (free review, ~2 weeks);
+smithery.ai rejected the bundle upload with "Updating servers has been removed" (their side).
+
 Ready-to-paste texts. Each site is submitted by the repo owner (SSYkolos).
 
 **Repository:** https://github.com/SSYkolos/deterministic-finance-cad-mcp
