@@ -34,15 +34,15 @@ lets you claim it (`glama.json` in the repo lists SSYkolos as maintainer).
 
 ## 2. smithery.ai
 
-Smithery lists local (stdio) servers as an **MCPB bundle**.
+Local (stdio) servers are published from the command line as an MCPB bundle.
 
-1. Build the bundle (in the repo folder):
-   `npx -y @anthropic-ai/mcpb pack . dist/server.mcpb`
-   (or download `server.mcpb` from the GitHub release, if attached).
-2. Go to https://smithery.ai/new and sign in with GitHub.
-3. Choose **Local (MCPB Bundle)**, upload `server.mcpb`, and complete the form with the
-   texts above. The RapidAPI key is a `user_config` field marked sensitive, so Smithery
-   asks each user for their own key.
+    npx -y @anthropic-ai/mcpb pack . dist/server.mcpb
+    python scripts/smithery_bundle.py        # adds tool input schemas Smithery requires
+    npx -y @smithery/cli login
+    npx -y @smithery/cli mcp publish ./dist/smithery.mcpb -n hetyessykolos/deterministic-finance-cad
+
+The RapidAPI key is a sensitive `user_config` field, so Smithery asks each user for
+their own key.
 
 ## 3. mcpservers.org
 
