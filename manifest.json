@@ -35,6 +35,8 @@
     { "name": "generate_sepa", "description": "Build a SEPA pain.001/pain.008 file" },
     { "name": "validate_sepa", "description": "Validate a SEPA pain.001/pain.008 file" },
     { "name": "read_sepa_status", "description": "Explain a pain.002 status report" },
+    { "name": "structure_address", "description": "Split a free-text address into ISO 20022 structured fields" },
+    { "name": "fix_sepa_addresses", "description": "Fix payer/payee addresses in a pain.001/pain.008 file" },
     { "name": "generate_ach", "description": "Build a NACHA ACH file" },
     { "name": "validate_ach", "description": "Validate a NACHA ACH file" },
     { "name": "parse_ach", "description": "ACH file to JSON or CSV rows" },

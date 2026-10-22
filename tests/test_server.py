@@ -108,7 +108,7 @@ def test_tools_registered():
     import asyncio
     names = asyncio.run(_list_tools())
     assert {"reconcile_statement", "analyze_dxf", "quote_dxf", "validate_sepa",
-            "generate_sepa", "validate_ach"} <= set(names)
+            "generate_sepa", "validate_ach", "structure_address", "fix_sepa_addresses"} <= set(names)
 
 
 @pytest.mark.skipif(not os.environ.get("RAPIDAPI_KEY"), reason="needs a real RAPIDAPI_KEY")
@@ -117,3 +117,12 @@ def test_smoke_real_api():
              ":61:2610011001C50,00NTRFNONREF\n:86:Test\n:62F:C261001EUR150,00\n-")
     out = json.loads(s.reconcile_statement(mt940))
     assert out
+
+
+def test_address_tools(api):
+    s.structure_address("Lindenallee 12, 10115 Berlin", country="DE")
+    assert api[0].url.path == "/v1/addresses/parse"
+    assert json.loads(api[0].content) == {"text": "Lindenallee 12, 10115 Berlin", "country": "DE"}
+    s.fix_sepa_addresses("<Document/>")
+    assert api[1].url.path == "/v1/addresses/fix-file" and api[1].url.params["return_report"] == "true"
+    assert api[1].headers["content-type"] == "application/xml"

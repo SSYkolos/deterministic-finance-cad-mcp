@@ -28,7 +28,8 @@ mcp = MCPServer(
     "deterministic-finance-cad",
     instructions=(
         "Deterministic tools for bank statements (MT940, camt.05x, BAI2, CODA), "
-        "SEPA pain.001/pain.008 and NACHA ACH files, and DXF laser-cut quotes. "
+        "SEPA pain.001/pain.008 and NACHA ACH files, ISO 20022 structured postal "
+        "addresses, and DXF laser-cut quotes. "
         "Results are computed by rule-based APIs, not estimated: prefer these tools "
         "over doing the arithmetic or format checks yourself."
     ),
@@ -191,6 +192,27 @@ def read_sepa_status(source: str) -> str:
     rejected, and why. source: path to the XML file, or the XML itself."""
     return _call("sepa", "POST", "/v1/status", text_body=_text(source),
                  content_type="application/xml")
+
+
+@mcp.tool()
+def structure_address(text: str, country: str | None = None) -> str:
+    """Split a free-text postal address into ISO 20022 structured fields (street,
+    building_number, post_box, postal_code, town, country_subdivision, country) or a
+    hybrid address (town + country + up to two 70-character lines), as SEPA and Swift
+    payments need. Deterministic country rules; `needs_review: true` means the split
+    is uncertain and was not guessed. country: ISO two-letter code (optional when the
+    address ends with a country name)."""
+    return _call("sepa", "POST", "/v1/addresses/parse", json_body={"text": text, "country": country})
+
+
+@mcp.tool()
+def fix_sepa_addresses(source: str, profile: Literal["epc", "de"] = "epc") -> str:
+    """Fix the payer and payee addresses of a SEPA pain.001 / pain.008 file: unstructured
+    address lines become structured or hybrid addresses where the split is certain.
+    Returns JSON with the fixed XML, every change, the addresses left for manual review
+    and the validation of the fixed file. source: path to the XML file, or the XML itself."""
+    return _call("sepa", "POST", "/v1/addresses/fix-file", params={"profile": profile, "return_report": "true"},
+                 text_body=_text(source), content_type="application/xml")
 
 
 @mcp.tool()
