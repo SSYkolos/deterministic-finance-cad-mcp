@@ -36,6 +36,8 @@ does the counting.
 | `generate_sepa` | Build and validate a pain.001 / pain.008 file from JSON or CSV |
 | `validate_sepa` | Validate a pain.001 / pain.008 file |
 | `read_sepa_status` | Explain a pain.002 status report |
+| `structure_address` | Split a free-text address into ISO 20022 structured fields (or a hybrid address); uncertain splits are flagged, not guessed |
+| `fix_sepa_addresses` | Fix the payer and payee addresses of a pain.001 / pain.008 file, with a change report |
 | `generate_ach` | Build and validate a NACHA ACH file |
 | `validate_ach` | Validate a NACHA ACH file |
 | `parse_ach` | ACH file to JSON or CSV rows |
